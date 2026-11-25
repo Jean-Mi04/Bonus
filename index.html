@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Super-Brotdose</title>
+<style>
+/* VOICE: freundlich, klar, Förderschule – wie die Original-App
+   IDEA: Brotdose packen wie im Supermarkt, mit Medaillen
+   PICTURE: Produktkarten mit gezeichneten Lebensmitteln
+   COLOUR and TYPE: wie das Original (Blau #2469b2, Systemschrift)
+   LAYOUT: Sticky-Statusleiste, Produktgruppen, Aktionsleiste unten */
+*{box-sizing:border-box}
+body{margin:0;padding:0 14px 82px;background:#f3f6fb;color:#203349;font-family:system-ui,sans-serif}
+main{max-width:960px;margin:auto}
+.site-logo{position:sticky;top:0;z-index:30;height:66px;padding:5px 0;background:#f3f6fb;display:flex;align-items:center;gap:9px}
+.site-logo svg{display:block;flex:0 0 auto;width:82px;height:50px}
+.language-buttons{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.language-buttons button{min-height:29px;padding:4px 8px;border:1px solid #aebfd0;border-radius:7px;background:#fff;color:#203349;font-size:.72rem;font-weight:700}
+.language-buttons button.active{background:#2469b2;border-color:#2469b2;color:#fff}
+h1{font-size:1.35rem;margin:8px 0}
+h2{font-size:1.1rem}
+h3{font-size:1rem}
+.panel{background:#fff;border:1px solid #dce4ed;border-radius:15px;padding:16px;margin:13px 0}
+button,input{font:inherit}
+button{cursor:pointer;border:1px solid #aebfd0;background:#fff;color:#203349;border-radius:10px;padding:9px 13px}
+button:hover{background:#edf5ff}
+button:focus-visible,input:focus-visible{outline:3px solid #2266cc;outline-offset:3px}
+button:disabled{opacity:.55;cursor:not-allowed}
+.primary{background:#2469b2;color:#fff;border-color:#2469b2}
+.primary:hover{background:#1d5a9b}
+.task{padding:14px;background:#ffe4e4;border:2px solid #c83232;border-radius:12px;color:#781c1c;font-weight:700;line-height:1.5}
+.rules{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:.88rem}
+.rules th,.rules td{border:1px solid #dce4ed;padding:7px 8px;text-align:center}
+.rules th{background:#edf3f8}
+.rules td:first-child{text-align:start;font-weight:700}
+.rules-wrap{overflow-x:auto}
+.group-title{margin:18px 0 8px;font-size:.98rem;color:#2469b2}
+.group-title:first-child{margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:9px}
+.product{display:flex;gap:10px;align-items:center;min-width:0;border:1px solid #d7e1eb;border-radius:12px;padding:10px;cursor:pointer}
+.product:has(input:checked){background:#edf6ff;border-color:#4f8bc6}
+.product:has(input:disabled){opacity:.55;cursor:not-allowed}
+.product input{margin:0;width:18px;height:18px;accent-color:#2266bb;flex-shrink:0}
+.product-img{display:block;flex:0 0 44px;width:44px;height:44px;border-radius:8px;background:#f6f1e7}
+.product-img svg{display:block;width:100%;height:100%}
+.product-info{display:block;flex:1;min-width:0}
+.product-name,.details{display:block;overflow-wrap:anywhere}
+.product-name{font-size:.88rem;line-height:1.35;margin:2px 0 5px;font-weight:700}
+.details{font-size:.82rem;color:#52677c;line-height:1.45}
+.stars{display:block;color:#895400;font-size:.8rem;margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.stat{background:#f2f6fa;border-radius:8px;padding:7px 8px;min-width:0}
+.stat>span{display:block;font-size:.72rem;color:#55697d}
+.stat strong{display:block;margin-top:2px;font-size:.88rem;overflow-wrap:anywhere}
+.stat .medal{display:block;margin-top:2px;font-size:.74rem;font-weight:700;color:#55697d}
+.stat.m3{background:#fff4c4}.stat.m2{background:#eef1f4}.stat.m1{background:#f8e7d8}
+.calorie-meter{position:relative;overflow:hidden;min-height:27px;margin-top:4px;border-radius:7px;background:#dfe6ed}
+.calorie-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;transition:width 200ms}
+[dir="rtl"] .calorie-fill{inset:0 0 0 auto}
+.calorie-meter strong{position:relative;z-index:1;display:block;padding:4px 6px}
+.goal-row{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+.goal{flex:1 1 220px;background:#fff2c9;border-radius:9px;padding:8px 10px;font-size:.84rem;font-weight:700}
+.goal.reached{background:#e6f5ec;color:#176747}
+.points{flex:0 0 auto;background:#e3f1ff;color:#1a4f8b;border-radius:9px;padding:8px 10px;font-size:.84rem;font-weight:800}
+#game>.panel:first-child{position:sticky;top:66px;z-index:10;box-shadow:0 5px 14px #2033491a}
+#actionBar{position:fixed;z-index:20;bottom:0;left:0;right:0;background:#fffffffa;border-top:1px solid #d5e0ea;padding:8px 14px}
+.action-inner{max-width:960px;margin:auto;display:flex;justify-content:flex-end;gap:8px}
+#hintFloat{position:fixed;z-index:40;left:50%;bottom:72px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:0 12px;border:2px solid #d89d00;border-radius:999px;background:#fff3bd;box-shadow:0 3px 12px #20334945;font-size:.88rem;font-weight:700}
+#hintFloat span:first-child{font-size:20px}
+#hintFloat:hover{background:#ffe68a}
+#hintPopup{position:fixed;z-index:39;left:50%;bottom:120px;transform:translateX(-50%);width:min(340px,calc(100vw - 32px));padding:12px 14px;border:1px solid #d7c47c;border-radius:12px;background:#fffdf2;box-shadow:0 5px 18px #20334935;line-height:1.5}
+#hintPopup p{margin:0 0 6px}#hintPopup p:last-child{margin:0}
+.table-wrap{width:100%;overflow-x:auto;border-radius:10px}
+.data-table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse;font-size:.84rem;background:#fff}
+.data-table col:nth-child(1){width:14%}
+.data-table col:nth-child(2){width:34%}
+.data-table col:nth-child(3){width:11%}
+.data-table col:nth-child(4){width:10%}
+.data-table col:nth-child(5){width:11%}
+.data-table col:nth-child(6){width:11%}
+.data-table col:nth-child(7){width:9%}
+.data-table th,.data-table td{padding:8px;border:1px solid #dce4ed;text-align:start;vertical-align:middle;overflow-wrap:anywhere}
+.data-table th{background:#edf3f8;text-align:center;overflow-wrap:normal;hyphens:auto}
+.data-table td:nth-child(n+3){text-align:center;font-weight:700;white-space:nowrap}
+.data-table tbody tr:nth-child(even){background:#f8fafc}
+.data-table th:nth-child(3){background:#dfe6ed}
+.data-table th:nth-child(4){background:#f6a5a5}
+.data-table th:nth-child(5){background:#b9e4a9}
+.data-table th:nth-child(6){background:#8b4a3c;color:#fff}
+.data-table th:nth-child(7){background:#ffe27a}
+.data-table tr.mine{background:#e3f1ff!important}
+.icon-list{display:flex;flex-wrap:wrap;gap:4px}
+.icon-item{display:flex;align-items:center;gap:4px;padding:2px 6px 2px 2px;border-radius:6px;background:#f6f1e7;font-size:.74rem;line-height:1.2}
+.icon-item svg{display:block;width:24px;height:24px;flex:0 0 24px}
+.quiz-question{margin:16px 0 4px}
+.quiz-sub{margin:0 0 10px;color:#55697d;font-size:.9rem}
+.quiz-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px}
+.quiz-options button{padding:12px 14px;font-weight:700;font-size:1rem;text-align:center}
+.quiz-options button[aria-pressed="true"]{background:#e3f1ff;border:2px solid #2469b2;color:#1a4f8b}
+.quiz-options button.wrong{background:#ffe4e4;border-color:#c83232;color:#781c1c}
+.quiz-options button.right{background:#e6f5ec;border-color:#2e8b57;color:#176747}
+#quizCheck{margin-top:12px}
+#quizFeedback{min-height:1.5em;margin:12px 0 0;font-weight:700}
+#quizFeedback.wrong{color:#a12626}
+#quizFeedback.right{color:#176747}
+.merke{margin:14px 0;padding:12px 14px;border:2px solid #2e8b57;border-radius:12px;background:#f0faf3;line-height:1.55}
+.merke h3{margin:0 0 6px;color:#176747}
+.merke p{margin:0 0 6px}.merke p:last-child{margin:0}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px;margin:8px 0}
+.stat-card{padding:12px;border:1px solid #dce4ed;border-radius:12px;background:#fff}
+.stat-card strong{display:block;font-size:1.5rem;color:#2469b2}
+.stat-card span{font-size:.86rem;color:#52677c}
+#leaderboardStatus{font-size:.9rem;color:#9b2525}
+[hidden]{display:none!important}
+@media(min-width:700px) and (max-width:1180px){
+ #game>.panel:first-child{padding:7px 11px;margin:5px 0;border-radius:11px}
+ #gameHeading{font-size:.92rem;margin:3px 0}
+ .goal,.points{padding:4px 8px;font-size:.74rem;line-height:1.25}
+ .goal-row{margin:4px 0}
+ .stats{gap:4px}
+ .stat{padding:3px 6px;border-radius:6px}
+ .stat>span{font-size:.64rem}
+ .stat strong{margin-top:0;font-size:.76rem;line-height:1.2}
+ .stat .medal{font-size:.66rem;margin-top:0}
+ .calorie-meter{min-height:21px;margin-top:2px}
+ .calorie-meter strong{padding:2px 5px}
+}
+@media(max-width:699px){
+ body{padding-left:10px;padding-right:10px}
+ .panel{padding:13px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .stat{padding:6px}
+ .stat>span{font-size:.68rem}
+ .stat strong{font-size:.8rem}
+ .product-img{flex-basis:38px;width:38px;height:38px}
+ .action-inner{display:grid;grid-template-columns:1fr 1.5fr}
+ .action-inner button{padding:8px 6px;font-size:.85rem}
+ #hintFloat{bottom:76px}
+ #hintPopup{bottom:122px}
+}
+</style>
+</head>
+<body>
+<main>
+<header class="site-logo" aria-label="6E und Sprachauswahl">
+  <svg viewBox="0 0 300 180" role="img" aria-label="6E">
+    <rect x="4" y="4" width="292" height="172" fill="#fff000" stroke="#111" stroke-width="8"/>
+    <text x="18" y="151" font-family="Arial Black,Arial,sans-serif" font-size="158" font-weight="900" fill="#1765ad">6</text>
+    <path d="M165 28h112v34h-77v15h77v34h-77v15h77v34H165z" fill="#1765ad"/>
+  </svg>
+  <div class="language-buttons" role="group" aria-label="Sprache auswählen">
+    <button type="button" data-language="de">Deutsch</button>
+    <button type="button" data-language="en">English</button>
+    <button type="button" data-language="ru">Русский</button>
+    <button type="button" data-language="ar">العربية</button>
+  </div>
+</header>
+
+<h1 id="pageTitle"></h1>
+
+<section class="panel" id="startScreen">
+  <h2 id="levelTitle"></h2>
+  <p class="task" id="task"></p>
+  <h3 id="rulesHeading"></h3>
+  <div class="rules-wrap"><table class="rules" id="rulesTable"></table></div>
+  <button class="primary" id="startButton" type="button"></button>
+</section>
+
+<section class="panel" id="quizScreen" hidden>
+  <h2 id="quizLevelTitle"></h2>
+  <p class="task" id="quizTask"></p>
+  <h3 class="quiz-question" id="quizQuestion"></h3>
+  <p class="quiz-sub" id="quizSub"></p>
+  <div class="quiz-options" id="quizOptions"></div>
+  <button class="primary" id="quizCheck" type="button"></button>
+  <p id="quizFeedback" role="status" aria-live="polite"></p>
+</section>
+
+<div id="game" hidden>
+  <section class="panel">
+    <h2 id="gameHeading"></h2>
+    <div class="goal-row">
+      <div class="goal" id="goal"></div>
+      <div class="points" id="points"></div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span id="calorieLabel"></span>
+        <div class="calorie-meter" id="calorieMeter" role="progressbar" aria-valuemin="0" aria-valuemax="650" aria-valuenow="0">
+          <div class="calorie-fill" id="calorieFill"></div>
+          <strong id="calories"></strong>
+        </div>
+      </div>
+      <div class="stat" id="statHealth"><span id="healthLabel"></span><strong id="health"></strong><span class="medal" id="healthMedal"></span></div>
+      <div class="stat" id="statPrice"><span id="priceLabel"></span><strong id="price"></strong><span class="medal" id="priceMedal"></span></div>
+      <div class="stat" id="statShelf"><span id="shelfLabel"></span><strong id="shelfLife"></strong><span class="medal" id="shelfMedal"></span></div>
+    </div>
+  </section>
+  <section class="panel">
+    <h2 id="productsHeading"></h2>
+    <div id="products"></div>
+  </section>
+</div>
+
+<button id="hintFloat" type="button" aria-expanded="false" hidden>
+  <span aria-hidden="true">💡</span><span id="hintLabel"></span>
+</button>
+<div id="hintPopup" role="status" aria-live="polite" hidden></div>
+
+<section class="panel" id="nameGate" hidden>
+  <h2 id="nameHeading"></h2>
+  <p id="nameInstructions"></p>
+  <label for="playerName" id="nameLabel"></label>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <input id="playerName" type="text" maxlength="24" autocomplete="nickname" style="min-width:0;flex:1;border:1px solid #aebfd0;border-radius:10px;padding:9px">
+    <button class="primary" id="submitScore" type="button"></button>
+  </div>
+  <p id="scoreStatus" role="status" aria-live="polite"></p>
+  <button id="skipSave" type="button" hidden></button>
+</section>
+
+<section class="panel" id="finalScreen" hidden>
+  <h2 id="finalHeading"></h2>
+  <p id="finalInstructions" style="font-weight:600"></p>
+  <div class="table-wrap">
+    <table class="data-table" id="ownTable"></table>
+  </div>
+  <div class="merke" id="merke"></div>
+  <h2 id="compareHeading"></h2>
+  <p id="leaderboardStatus" role="status" aria-live="polite" hidden></p>
+  <div class="stat-cards" id="statCards"></div>
+  <h2 id="leaderboardHeading"></h2>
+  <div class="table-wrap">
+    <table class="data-table" id="topTable"></table>
+  </div>
+  <p><button id="restartButton" type="button"></button></p>
+</section>
+</main>
+
+<div id="actionBar" hidden>
+  <div class="action-inner">
+    <button id="clearButton" type="button"></button>
+    <button class="primary" id="nextButton" type="button"></button>
+  </div>
+</div>
+
+<script>
+"use strict";
+{
+const SUPABASE_URL="https://jglhmumkjkrynciqkhxc.supabase.co";
+const SUPABASE_KEY="sb_publishable_nbtW5O1UNe6ADiNCXXP5tg_BiZPO4aw";
+/* Eigene Level-Nummer, damit die Ergebnisse die 4-Level-App nicht stören */
+const LEVEL_ID=10;
+const MIN=500,MAX=650,MAX_ITEMS=6,$=id=>document.getElementById(id);
+let lang="de",selected=new Set(),quizPick=new Set(),finalIds=[],submitted=false,solutionCache=null;
+
+/* Medaillen-Grenzen: [Gold, Silber, Bronze] */
+const RULES={health:[4,3.5,3],price:[150,250,350],shelf:[14,7,3]};
+
+/* Produktdaten: kcal pro Portion, Preis in Cent (Discounter, 2026),
+   Gesundheitssterne 1–5, Haltbarkeit in Tagen nach dem Einkauf (richtig gelagert),
+   Gruppe, Bild */
+const products=[
+ {kcal:80,cents:40,stars:5,days:30,g:0,img:"apple"},
+ {kcal:105,cents:30,stars:4,days:5,g:0,img:"banana"},
+ {kcal:55,cents:35,stars:5,days:14,g:0,img:"mandarin"},
+ {kcal:85,cents:50,stars:4,days:5,g:0,img:"grapes"},
+ {kcal:40,cents:100,stars:5,days:2,g:0,img:"strawberry"},
+ {kcal:30,cents:10,stars:5,days:21,g:0,img:"carrot"},
+ {kcal:15,cents:20,stars:5,days:7,g:0,img:"cucumber"},
+ {kcal:20,cents:60,stars:5,days:7,g:0,img:"tomato"},
+ {kcal:45,cents:179,stars:5,days:3,g:0,img:"vegcup"},
+ {kcal:125,cents:249,stars:5,days:2,g:0,img:"fruitsalad"},
+ {kcal:330,cents:60,stars:4,days:2,g:1,img:"breadcheese"},
+ {kcal:290,cents:50,stars:5,days:1,g:1,img:"breadcream"},
+ {kcal:180,cents:20,stars:4,days:60,g:1,img:"pumpernickel"},
+ {kcal:70,cents:10,stars:4,days:180,g:1,img:"crispbread"},
+ {kcal:90,cents:15,stars:3,days:180,g:1,img:"ricecake"},
+ {kcal:230,cents:55,stars:2,days:1,g:1,img:"pretzel"},
+ {kcal:240,cents:25,stars:1,days:3,g:1,img:"nutella"},
+ {kcal:300,cents:65,stars:2,days:1,g:1,img:"salami"},
+ {kcal:350,cents:249,stars:3,days:3,g:1,img:"sandwich"},
+ {kcal:100,cents:35,stars:4,days:21,g:2,img:"plainyog"},
+ {kcal:145,cents:45,stars:2,days:21,g:2,img:"fruityog"},
+ {kcal:105,cents:25,stars:3,days:30,g:2,img:"cheese"},
+ {kcal:80,cents:35,stars:4,days:7,g:2,img:"egg"},
+ {kcal:140,cents:50,stars:2,days:180,g:2,img:"cocoa"},
+ {kcal:180,cents:25,stars:4,days:180,g:3,img:"peanuts"},
+ {kcal:190,cents:40,stars:4,days:180,g:3,img:"trailmix"},
+ {kcal:90,cents:15,stars:3,days:365,g:3,img:"raisins"},
+ {kcal:60,cents:55,stars:3,days:270,g:3,img:"pouch"},
+ {kcal:105,cents:25,stars:2,days:180,g:3,img:"cerealbar"},
+ {kcal:130,cents:10,stars:1,days:180,g:3,img:"biscuits"},
+ {kcal:160,cents:30,stars:1,days:120,g:3,img:"chips"},
+ {kcal:215,cents:45,stars:1,days:270,g:3,img:"chocobar"},
+ {kcal:300,cents:69,stars:1,days:2,g:3,img:"croissant"}
+];
+
+const translations={
+de:{
+ page:"🥪 Super-Brotdose",
+ title:"Gesund, günstig und lange haltbar",
+ task:"Packe eine Brotdose mit 500 bis 650 Kalorien und höchstens 6 Produkten. Sie soll möglichst gesund, möglichst günstig und möglichst lange haltbar sein. Sammle Medaillen!",
+ rulesHeading:"So bekommst du Medaillen",
+ gold:"Gold",silver:"Silber",bronze:"Bronze",noMedal:"keine Medaille",
+ ruleHealth:"Gesundheit (Durchschnitt)",rulePrice:"Preis (zusammen)",ruleShelf:"Haltbarkeit",
+ atLeast:"ab",atMost:"bis",
+ start:"Start",check:"Antworten prüfen",
+ quizQuestion:"Worauf sollst du in diesem Level achten?",
+ quizSub:"Tippe alle richtigen Antworten an.",
+ quizOptions:["möglichst lecker","möglichst gesund","möglichst günstig","möglichst lange haltbar"],
+ quizWrong:"Noch nicht ganz. Es gibt genau 3 richtige Antworten. Lies den Auftrag noch einmal.",
+ quizRight:"Richtig! Los geht's.",
+ productsTitle:"Produkte auswählen",inBox:"in der Brotdose",
+ groups:["Obst und Gemüse","Brot und Getreide","Milch und Eier","Nüsse, Snacks und Süßes"],
+ calories:"Kalorien",health:"Gesundheit",price:"Preis",shelf:"Haltbarkeit",avgStars:"Ø Sterne",
+ days:"Tage",day:"Tag",healthStars:"Gesundheitssterne:",
+ pointsLabel:"Punkte",
+ goal:"✓ Kalorienziel erreicht – zwischen 500 und 650 Kalorien.",
+ short:"Noch {n} Kalorien bis zum Mindestziel von 500 Kalorien.",
+ tooMany:"Zu viele Kalorien: höchstens 650 Kalorien erlaubt.",
+ full:"Die Brotdose ist voll (6 Produkte).",
+ clear:"Auswahl löschen",finish:"Brotdose fertig",
+ tips:"Tipps",
+ hint:["Gesundheit: Es zählt der Durchschnitt der Sterne aller Produkte.","Haltbarkeit: Die Brotdose hält nur so lange wie das Produkt, das am schnellsten schlecht wird.","Haltbarkeit heißt: So viele Tage hält das Produkt nach dem Einkauf, wenn man es richtig lagert (zum Beispiel im Kühlschrank)."],
+ nameHeading:"Fast geschafft! Wie heißt du?",
+ nameInstructions:"Gib deinen Namen ein. Danach wird dein Ergebnis gespeichert und die Bestenliste angezeigt.",
+ nameLabel:"Dein Name (max. 24 Zeichen):",namePlaceholder:"Name eingeben",save:"Name speichern und weiter",
+ enterName:"Bitte gib deinen Namen ein.",saving:"Ergebnis wird gespeichert …",
+ saveError:"Speichern hat nicht geklappt. Prüfe die Verbindung.",skip:"Ohne Speichern weiter",
+ final:"Dein Ergebnis",finalInstructions:"Schreibe dein Ergebnis auf dein Arbeitsblatt.",
+ colWho:"Wer",colProducts:"Produkte",colPoints:"Punkte",
+ you:"Du",solution:"Beste Lösung",
+ merkeTitle:"Merke",
+ merke:["Gesund, günstig und lange haltbar geht zusammen! Zum Beispiel: Äpfel, Möhren, Mandarinen, Knäckebrot, Pumpernickel und Nüsse.","Fertig geschnittenes Obst und Gemüse im Becher ist gesund – aber teuer und schnell schlecht.","Süßes und Chips sind günstig und lange haltbar – aber ungesund."],
+ compare:"Vergleich aller Spieler",
+ cardAll:"Spieler haben mitgemacht",cardGold3:"haben 3× Gold geschafft",
+ cardGoldH:"Gold bei Gesundheit",cardGoldP:"Gold beim Preis",cardGoldS:"Gold bei Haltbarkeit",
+ leaderboard:"Bestenliste – Top 5",empty:"Noch keine Ergebnisse.",
+ loadError:"Die Bestenliste konnte nicht geladen werden. Prüfe die Verbindung.",
+ restart:"Noch einmal spielen",
+ products:["Apfel (1 Stück)","Banane (1 Stück)","Mandarinen (2 Stück)","Weintrauben (125 g)","Erdbeeren, Import (125 g)","Möhre (1 Stück)","Gurke (¼ Stück)","Cocktailtomaten (100 g)","Gemüse-Sticks im Becher, fertig geschnitten","Obstsalat im Becher, frisch (250 g)","Vollkornbrot mit Käse (2 Scheiben)","Vollkornbrot mit Frischkäse und Gurke (2 Scheiben)","Pumpernickel, eingeschweißt (2 Scheiben)","Vollkorn-Knäckebrot (2 Scheiben)","Vollkorn-Reiswaffeln (3 Stück)","Laugenbrezel vom Backshop","Toast mit Nuss-Nougat-Creme (2 Scheiben)","Brötchen mit Butter und Salami","Fertig-Sandwich mit Hähnchen (Kühlregal)","Naturjoghurt 3,5 % (150 g)","Fruchtjoghurt (150 g)","Käse-Sticks, Gouda (30 g)","Gekochtes Ei (1 Stück)","Kakao im Trinkpäckchen (0,2 l)","Erdnüsse, ungesalzen (30 g)","Studentenfutter (40 g)","Rosinen (30 g)","Apfelmus-Quetschie (90 g)","Müsliriegel (25 g)","Butterkekse (5 Stück)","Kartoffelchips (30 g)","Schokoriegel mit Karamell (45 g)","Schokocroissant vom Backshop"]
+},
+en:{
+ page:"🥪 Super lunchbox",
+ title:"Healthy, cheap and long-lasting",
+ task:"Pack a lunchbox with 500 to 650 calories and at most 6 products. It should be as healthy as possible, as cheap as possible and last as long as possible. Collect medals!",
+ rulesHeading:"How to get medals",
+ gold:"Gold",silver:"Silver",bronze:"Bronze",noMedal:"no medal",
+ ruleHealth:"Health (average)",rulePrice:"Price (total)",ruleShelf:"Shelf life",
+ atLeast:"from",atMost:"up to",
+ start:"Start",check:"Check answers",
+ quizQuestion:"What should you pay attention to in this level?",
+ quizSub:"Tap all correct answers.",
+ quizOptions:["as tasty as possible","as healthy as possible","as cheap as possible","as long-lasting as possible"],
+ quizWrong:"Not quite. There are exactly 3 correct answers. Read the task again.",
+ quizRight:"Correct! Let's go.",
+ productsTitle:"Choose products",inBox:"in the lunchbox",
+ groups:["Fruit and vegetables","Bread and grains","Milk and eggs","Nuts, snacks and sweets"],
+ calories:"Calories",health:"Health",price:"Price",shelf:"Shelf life",avgStars:"Ø stars",
+ days:"days",day:"day",healthStars:"Health stars:",
+ pointsLabel:"Points",
+ goal:"✓ Calorie goal reached – between 500 and 650 calories.",
+ short:"{n} calories until the minimum goal of 500.",
+ tooMany:"Too many calories: 650 calories maximum.",
+ full:"The lunchbox is full (6 products).",
+ clear:"Clear selection",finish:"Lunchbox done",
+ tips:"Tips",
+ hint:["Health: the average of the stars of all products counts.","Shelf life: the lunchbox only lasts as long as the product that goes off first.","Shelf life means: how many days the product keeps after shopping if stored correctly (for example in the fridge)."],
+ nameHeading:"Almost done! What is your name?",
+ nameInstructions:"Enter your name. Your result will then be saved and the leaderboard shown.",
+ nameLabel:"Your name (max. 24 characters):",namePlaceholder:"Enter name",save:"Save name and continue",
+ enterName:"Please enter your name.",saving:"Saving result …",
+ saveError:"Saving failed. Check the connection.",skip:"Continue without saving",
+ final:"Your result",finalInstructions:"Write your result on your worksheet.",
+ colWho:"Who",colProducts:"Products",colPoints:"Points",
+ you:"You",solution:"Best solution",
+ merkeTitle:"Remember",
+ merke:["Healthy, cheap and long-lasting can go together! For example: apples, carrots, mandarins, crispbread, pumpernickel and nuts.","Pre-cut fruit and vegetables in a cup are healthy – but expensive and go off quickly.","Sweets and crisps are cheap and last long – but they are unhealthy."],
+ compare:"Comparison of all players",
+ cardAll:"players took part",cardGold3:"got 3 × gold",
+ cardGoldH:"gold for health",cardGoldP:"gold for price",cardGoldS:"gold for shelf life",
+ leaderboard:"Leaderboard – top 5",empty:"No results yet.",
+ loadError:"The leaderboard could not be loaded. Check the connection.",
+ restart:"Play again",
+ products:["Apple (1)","Banana (1)","Mandarins (2)","Grapes (125 g)","Strawberries, imported (125 g)","Carrot (1)","Cucumber (¼)","Cherry tomatoes (100 g)","Vegetable sticks in a cup, pre-cut","Fresh fruit salad cup (250 g)","Whole-grain bread with cheese (2 slices)","Whole-grain bread with cream cheese and cucumber (2 slices)","Pumpernickel, sealed pack (2 slices)","Whole-grain crispbread (2 slices)","Whole-grain rice cakes (3)","Pretzel from the bakery counter","Toast with chocolate hazelnut spread (2 slices)","Bread roll with butter and salami","Ready-made chicken sandwich (chilled)","Plain yogurt 3.5 % (150 g)","Fruit yogurt (150 g)","Cheese sticks, Gouda (30 g)","Boiled egg (1)","Cocoa drink carton (0.2 l)","Peanuts, unsalted (30 g)","Trail mix (40 g)","Raisins (30 g)","Apple purée pouch (90 g)","Cereal bar (25 g)","Butter biscuits (5)","Potato crisps (30 g)","Caramel chocolate bar (45 g)","Chocolate croissant from the bakery counter"]
+},
+ru:{
+ page:"🥪 Супер-ланчбокс",
+ title:"Полезно, дёшево и долго хранится",
+ task:"Соберите ланчбокс на 500–650 калорий, не больше 6 продуктов. Он должен быть как можно полезнее, как можно дешевле и храниться как можно дольше. Собирайте медали!",
+ rulesHeading:"Как получить медали",
+ gold:"Золото",silver:"Серебро",bronze:"Бронза",noMedal:"нет медали",
+ ruleHealth:"Польза (в среднем)",rulePrice:"Цена (всего)",ruleShelf:"Срок хранения",
+ atLeast:"от",atMost:"до",
+ start:"Начать",check:"Проверить ответы",
+ quizQuestion:"На что нужно обращать внимание в этом уровне?",
+ quizSub:"Выберите все правильные ответы.",
+ quizOptions:["как можно вкуснее","как можно полезнее","как можно дешевле","как можно дольше хранится"],
+ quizWrong:"Не совсем. Правильных ответов ровно 3. Прочитайте задание ещё раз.",
+ quizRight:"Верно! Начинаем.",
+ productsTitle:"Выберите продукты",inBox:"в ланчбоксе",
+ groups:["Фрукты и овощи","Хлеб и злаки","Молоко и яйца","Орехи, снеки и сладости"],
+ calories:"Калории",health:"Польза",price:"Цена",shelf:"Срок хранения",avgStars:"Ø звёзд",
+ days:"дн.",day:"дн.",healthStars:"Звёзды здоровья:",
+ pointsLabel:"Очки",
+ goal:"✓ Цель достигнута — от 500 до 650 калорий.",
+ short:"Ещё {n} калорий до минимальной цели 500.",
+ tooMany:"Слишком много калорий: максимум 650.",
+ full:"Ланчбокс полон (6 продуктов).",
+ clear:"Очистить выбор",finish:"Ланчбокс готов",
+ tips:"Советы",
+ hint:["Польза: считается среднее число звёзд всех продуктов.","Срок хранения: ланчбокс хранится столько, сколько продукт, который портится быстрее всех.","Срок хранения — это сколько дней продукт хранится после покупки при правильном хранении (например, в холодильнике)."],
+ nameHeading:"Почти готово! Как вас зовут?",
+ nameInstructions:"Введите имя. Затем результат будет сохранён и появится таблица лидеров.",
+ nameLabel:"Ваше имя (не более 24 символов):",namePlaceholder:"Введите имя",save:"Сохранить имя и продолжить",
+ enterName:"Введите своё имя.",saving:"Сохранение результата …",
+ saveError:"Не удалось сохранить. Проверьте соединение.",skip:"Продолжить без сохранения",
+ final:"Ваш результат",finalInstructions:"Запишите результат на рабочий лист.",
+ colWho:"Кто",colProducts:"Продукты",colPoints:"Очки",
+ you:"Вы",solution:"Лучшее решение",
+ merkeTitle:"Запомните",
+ merke:["Полезно, дёшево и долго хранится — это возможно! Например: яблоки, морковь, мандарины, хлебцы, пумперникель и орехи.","Нарезанные фрукты и овощи в стаканчике полезны — но дорогие и быстро портятся.","Сладости и чипсы дешёвые и долго хранятся — но вредные."],
+ compare:"Сравнение всех игроков",
+ cardAll:"игроков участвовало",cardGold3:"получили 3 × золото",
+ cardGoldH:"золото за пользу",cardGoldP:"золото за цену",cardGoldS:"золото за срок хранения",
+ leaderboard:"Таблица лидеров — топ-5",empty:"Результатов пока нет.",
+ loadError:"Не удалось загрузить таблицу лидеров. Проверьте соединение.",
+ restart:"Играть ещё раз",
+ products:["Яблоко (1 шт.)","Банан (1 шт.)","Мандарины (2 шт.)","Виноград (125 г)","Клубника, импорт (125 г)","Морковь (1 шт.)","Огурец (¼ шт.)","Помидоры черри (100 г)","Овощные палочки в стаканчике, нарезанные","Свежий фруктовый салат в стаканчике (250 г)","Цельнозерновой хлеб с сыром (2 ломтика)","Цельнозерновой хлеб со сливочным сыром и огурцом (2 ломтика)","Пумперникель в упаковке (2 ломтика)","Цельнозерновые хлебцы (2 шт.)","Цельнозерновые рисовые хлебцы (3 шт.)","Брецель из пекарни","Тост с шоколадно-ореховой пастой (2 ломтика)","Булочка с маслом и салями","Готовый сэндвич с курицей (из холодильника)","Натуральный йогурт 3,5 % (150 г)","Фруктовый йогурт (150 г)","Сырные палочки, гауда (30 г)","Варёное яйцо (1 шт.)","Какао в пакетике (0,2 л)","Арахис несолёный (30 г)","Смесь орехов и изюма (40 г)","Изюм (30 г)","Яблочное пюре в пакетике (90 г)","Мюсли-батончик (25 г)","Сливочное печенье (5 шт.)","Картофельные чипсы (30 г)","Шоколадный батончик с карамелью (45 г)","Шоколадный круассан из пекарни"]
+},
+ar:{
+ page:"🥪 علبة الطعام الخارقة",
+ title:"صحي ورخيص وطويل الصلاحية",
+ task:"جهّز علبة طعام فيها 500 إلى 650 سعرة حرارية و6 منتجات على الأكثر. يجب أن تكون صحية قدر الإمكان، ورخيصة قدر الإمكان، وتدوم أطول مدة ممكنة. اجمع الميداليات!",
+ rulesHeading:"كيف تحصل على الميداليات",
+ gold:"ذهب",silver:"فضة",bronze:"برونز",noMedal:"لا ميدالية",
+ ruleHealth:"الصحة (المتوسط)",rulePrice:"السعر (المجموع)",ruleShelf:"مدة الصلاحية",
+ atLeast:"من",atMost:"حتى",
+ start:"ابدأ",check:"تحقق من الإجابات",
+ quizQuestion:"ما الذي يجب أن تنتبه إليه في هذا المستوى؟",
+ quizSub:"اضغط على كل الإجابات الصحيحة.",
+ quizOptions:["ألذ ما يمكن","أصح ما يمكن","أرخص ما يمكن","أطول صلاحية ممكنة"],
+ quizWrong:"ليس تمامًا. توجد 3 إجابات صحيحة بالضبط. اقرأ المهمة مرة أخرى.",
+ quizRight:"صحيح! لنبدأ.",
+ productsTitle:"اختر المنتجات",inBox:"في علبة الطعام",
+ groups:["فواكه وخضار","خبز وحبوب","حليب وبيض","مكسرات ووجبات خفيفة وحلويات"],
+ calories:"السعرات الحرارية",health:"الصحة",price:"السعر",shelf:"مدة الصلاحية",avgStars:"متوسط النجوم",
+ days:"أيام",day:"يوم",healthStars:"نجوم الصحة:",
+ pointsLabel:"النقاط",
+ goal:"✓ تم تحقيق هدف السعرات الحرارية — بين 500 و650.",
+ short:"تبقى {n} سعرة حرارية للوصول إلى الحد الأدنى 500.",
+ tooMany:"السعرات الحرارية كثيرة: الحد الأقصى 650.",
+ full:"علبة الطعام ممتلئة (6 منتجات).",
+ clear:"مسح الاختيار",finish:"علبة الطعام جاهزة",
+ tips:"نصائح",
+ hint:["الصحة: يُحسب متوسط نجوم كل المنتجات.","مدة الصلاحية: تدوم العلبة فقط بقدر المنتج الذي يفسد أولًا.","مدة الصلاحية تعني: كم يومًا يبقى المنتج صالحًا بعد الشراء إذا حُفظ بشكل صحيح (مثلًا في الثلاجة)."],
+ nameHeading:"أوشكت على الانتهاء! ما اسمك؟",
+ nameInstructions:"أدخل اسمك. بعد ذلك تُحفَظ نتيجتك وتظهر قائمة المتصدرين.",
+ nameLabel:"اسمك (حتى 24 حرفًا):",namePlaceholder:"أدخل الاسم",save:"حفظ الاسم والمتابعة",
+ enterName:"يرجى إدخال اسمك.",saving:"جارٍ حفظ النتيجة …",
+ saveError:"تعذّر الحفظ. تحقق من الاتصال.",skip:"المتابعة بدون حفظ",
+ final:"نتيجتك",finalInstructions:"اكتب نتيجتك في ورقة العمل.",
+ colWho:"من",colProducts:"المنتجات",colPoints:"النقاط",
+ you:"أنت",solution:"أفضل حل",
+ merkeTitle:"تذكّر",
+ merke:["الصحي والرخيص وطويل الصلاحية يمكن أن يجتمعوا! مثلًا: التفاح والجزر واليوسفي والخبز المقرمش والبومبرنيكل والمكسرات.","الفواكه والخضار المقطّعة في علبة صحية — لكنها غالية وتفسد بسرعة.","الحلويات ورقائق البطاطس رخيصة وتدوم طويلًا — لكنها غير صحية."],
+ compare:"مقارنة جميع اللاعبين",
+ cardAll:"لاعبين شاركوا",cardGold3:"حصلوا على 3 ميداليات ذهبية",
+ cardGoldH:"ذهب في الصحة",cardGoldP:"ذهب في السعر",cardGoldS:"ذهب في مدة الصلاحية",
+ leaderboard:"قائمة المتصدرين — أفضل 5",empty:"لا توجد نتائج بعد.",
+ loadError:"تعذّر تحميل قائمة المتصدرين. تحقق من الاتصال.",
+ restart:"العب مرة أخرى",
+ products:["تفاحة (1)","موزة (1)","يوسفي (2)","عنب (125 غ)","فراولة مستوردة (125 غ)","جزرة (1)","خيار (ربع حبة)","طماطم كرزية (100 غ)","أعواد خضار مقطّعة في علبة","سلطة فواكه طازجة في علبة (250 غ)","خبز حبوب كاملة مع الجبن (شريحتان)","خبز حبوب كاملة مع الجبن الكريمي والخيار (شريحتان)","خبز بومبرنيكل مغلّف (شريحتان)","خبز مقرمش من الحبوب الكاملة (شريحتان)","كعك أرز من الحبوب الكاملة (3)","بريتزل من المخبز","توست مع كريمة الشوكولاتة بالبندق (شريحتان)","خبز صغير مع الزبدة والسلامي","ساندويتش دجاج جاهز (مبرّد)","زبادي طبيعي 3.5 % (150 غ)","زبادي بالفواكه (150 غ)","أعواد جبن غودا (30 غ)","بيضة مسلوقة (1)","كاكاو في علبة عصير (0.2 لتر)","فول سوداني غير مملّح (30 غ)","خليط مكسرات وزبيب (40 غ)","زبيب (30 غ)","هريس تفاح في كيس (90 غ)","قطعة حبوب (25 غ)","بسكويت بالزبدة (5)","رقائق البطاطس (30 غ)","لوح شوكولاتة بالكراميل (45 غ)","كرواسون بالشوكولاتة من المخبز"]
+}
+};
+
+/* Produktbilder als eingebettete Zeichnungen (keine externen Dateien nötig) */
+const SH='<ellipse cx="32" cy="56" rx="22" ry="3.5" fill="#000" opacity=".12"/>';
+const BREAD='<path d="M10 55V26c0-11 9-17 22-17s22 6 22 17v29z" fill="#5a3418"/><path d="M13.5 52V27c0-8.5 7.5-14 18.5-14s18.5 5.5 18.5 14v25z" fill="#9b6a3e"/>';
+const art={
+apple:SH+'<path d="M32 19c-6-4-21-4-23 11-2 13 6 25 14 27 4 1 6-1 9-1s5 2 9 1c8-2 16-14 14-27-2-15-17-15-23-11z" fill="#d92b23"/><path d="M32 19c-6-4-21-4-23 11-1 5 0 10 2 14 3-14 12-22 21-25z" fill="#ff6a5c" opacity=".5"/><path d="M32 20c-.5-5 1-10 4-13" stroke="#5b3a1e" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M35 13c4-6 12-7 16-4-3 5-10 7-16 4z" fill="#4c9a2a"/>',
+banana:SH+'<path d="M9 17c3 21 19 35 44 32 3-.4 3-4 .3-4.4C35 43 22 34 16 15c-.9-2.8-7.4-1.4-7 2z" fill="#f4c932" stroke="#b58a14"/><path d="M12 19c5 15 17 25 36 27" stroke="#d6a821" stroke-width="1.3" fill="none"/><path d="M9.3 15.5l-1.5-5 4.2-1 1.6 5.2z" fill="#6b4a1f"/><circle cx="54.5" cy="46.8" r="1.8" fill="#4a3313"/>',
+mandarin:SH+'<circle cx="22" cy="38" r="15" fill="#f28c1b" stroke="#c76a0c"/><circle cx="43" cy="36" r="14" fill="#f7a23a" stroke="#c76a0c"/><path d="M43 22c4-5 10-5 12-3-3 4-8 5-12 3z" fill="#4c9a2a"/><circle cx="17" cy="33" r="3" fill="#fff" opacity=".35"/><circle cx="38" cy="31" r="3" fill="#fff" opacity=".35"/>',
+grapes:SH+'<path d="M32 6v9" stroke="#6b4a1f" stroke-width="2.5"/><path d="M33 11c5-4 11-3 13 0-4 3-9 3-13 0z" fill="#5c9e31"/><g fill="#9fcc55" stroke="#5f8f2a"><circle cx="24" cy="21" r="6"/><circle cx="36" cy="20" r="6"/><circle cx="30" cy="29" r="6"/><circle cx="19" cy="31" r="6"/><circle cx="42" cy="30" r="6"/><circle cx="25" cy="40" r="6"/><circle cx="37" cy="39" r="6"/><circle cx="31" cy="49" r="6"/></g>',
+strawberry:SH+'<g fill="#d81e2c"><path d="M21 22c-9 0-13 4-13 10 0 8 8 16 13 19 5-3 13-11 13-19 0-6-4-10-13-10z"/><path d="M43 22c-9 0-13 4-13 10 0 8 8 16 13 19 5-3 13-11 13-19 0-6-4-10-13-10z"/></g><g fill="#ffe27a"><circle cx="16" cy="31" r=".9"/><circle cx="22" cy="29" r=".9"/><circle cx="19" cy="37" r=".9"/><circle cx="25" cy="36" r=".9"/><circle cx="38" cy="31" r=".9"/><circle cx="44" cy="29" r=".9"/><circle cx="41" cy="37" r=".9"/><circle cx="47" cy="35" r=".9"/></g><path d="M14 22l7-6 7 6zM36 22l7-6 7 6z" fill="#3f9a33"/>',
+carrot:SH+'<path d="M44 14L14 52c-2 3 1 5 4 3l34-30z" fill="#f07f1e" stroke="#c45f0b"/><path d="M28 34l4 3M22 42l4 3M35 27l3 3" stroke="#c45f0b" stroke-width="1.4" stroke-linecap="round"/><path d="M46 18c-2-7 0-12 3-13 1 5 0 9-3 13zM48 20c5-4 10-4 12-2-4 3-8 4-12 2zM47 19c3-6 8-8 11-7-2 4-6 6-11 7z" fill="#4c9a2a"/>',
+cucumber:SH+'<rect x="4" y="22" width="40" height="16" rx="8" fill="#3f8a2e" transform="rotate(-20 24 30)"/><circle cx="44" cy="40" r="11" fill="#d7edb5" stroke="#3f8a2e" stroke-width="3"/><g fill="#9cc56d"><circle cx="41" cy="37" r="1.3"/><circle cx="47" cy="37" r="1.3"/><circle cx="44" cy="43" r="1.3"/><circle cx="40" cy="42" r="1.1"/><circle cx="48" cy="42" r="1.1"/></g>',
+tomato:SH+'<g fill="#e23b2e" stroke="#a82219"><circle cx="20" cy="42" r="11"/><circle cx="43" cy="42" r="11"/><circle cx="31" cy="25" r="11"/></g><path d="M31 15l2 4 4-1-3 3 2 4-5-2-5 2 2-4-3-3 4 1z" fill="#3f8a2e"/><g fill="#fff" opacity=".35"><circle cx="16" cy="38" r="2.5"/><circle cx="39" cy="38" r="2.5"/><circle cx="27" cy="21" r="2.5"/></g>',
+vegcup:SH+'<rect x="18" y="8" width="6" height="34" rx="2" fill="#f07f1e" transform="rotate(-10 21 25)"/><rect x="27" y="5" width="6" height="36" rx="1.5" fill="#bfe08f" stroke="#2f7a2a"/><rect x="36" y="8" width="6" height="34" rx="2" fill="#f2c230" transform="rotate(12 39 25)"/><path d="M16 28h32l-3 28H19z" fill="#e6eef5" stroke="#9fb3c3" opacity=".92"/><rect x="21" y="38" width="22" height="9" rx="2" fill="#fff" stroke="#9fb3c3"/><path d="M25 42.5h14" stroke="#5fb43c" stroke-width="2"/>',
+fruitsalad:SH+'<circle cx="20" cy="26" r="6" fill="#f4c932"/><circle cx="31" cy="23" r="6" fill="#d81e2c"/><circle cx="42" cy="26" r="6" fill="#8fc24a"/><circle cx="25" cy="31" r="5" fill="#f28c1b"/><circle cx="37" cy="31" r="5" fill="#6b3fa0"/><path d="M10 29h44l-5 26H15z" fill="#eaf4fb" stroke="#9fb3c3" opacity=".9"/><path d="M8 29h48" stroke="#9fb3c3" stroke-width="2"/><rect x="19" y="38" width="26" height="9" rx="2" fill="#fff" stroke="#9fb3c3"/><path d="M23 42.5h18" stroke="#e8434f" stroke-width="2"/>',
+breadcheese:SH+BREAD+'<path d="M8 25l42-6 6 24-42 6z" fill="#f6c94a" stroke="#c9921c"/><g fill="#d8a01f"><circle cx="22" cy="33" r="2.6"/><circle cx="36" cy="28" r="2"/><circle cx="44" cy="37" r="3"/><circle cx="30" cy="41" r="1.8"/></g>',
+breadcream:SH+BREAD+'<path d="M16 49V28c0-7 6-12 16-12s16 5 16 12v21z" fill="#fbfaf4"/><g fill="#d7edb5" stroke="#3f8a2e" stroke-width="2"><circle cx="25" cy="28" r="6"/><circle cx="39" cy="30" r="6"/><circle cx="31" cy="41" r="6"/></g>',
+pumpernickel:SH+'<rect x="7" y="13" width="50" height="40" rx="5" fill="#e6eef5" stroke="#9fb3c3"/><rect x="12" y="18" width="24" height="30" rx="2" fill="#2e1a0f"/><rect x="26" y="20" width="25" height="30" rx="2" fill="#4a2c19" stroke="#2a180c"/><g fill="#7a4e2e"><circle cx="32" cy="27" r="1"/><circle cx="43" cy="31" r="1"/><circle cx="35" cy="40" r="1"/><circle cx="46" cy="44" r="1"/></g><path d="M10 17h44" stroke="#fff" stroke-width="2" opacity=".8"/>',
+crispbread:SH+'<g transform="rotate(-8 32 32)"><rect x="6" y="12" width="40" height="26" rx="2" fill="#c99552" stroke="#8f6229"/><rect x="16" y="24" width="40" height="26" rx="2" fill="#e2b46c" stroke="#8f6229"/><g fill="#8f6229"><circle cx="22" cy="30" r="1.2"/><circle cx="30" cy="30" r="1.2"/><circle cx="38" cy="30" r="1.2"/><circle cx="46" cy="30" r="1.2"/><circle cx="22" cy="37" r="1.2"/><circle cx="30" cy="37" r="1.2"/><circle cx="38" cy="37" r="1.2"/><circle cx="46" cy="37" r="1.2"/><circle cx="22" cy="44" r="1.2"/><circle cx="30" cy="44" r="1.2"/><circle cx="38" cy="44" r="1.2"/><circle cx="46" cy="44" r="1.2"/></g></g>',
+ricecake:SH+'<ellipse cx="32" cy="45" rx="21" ry="7" fill="#cfb37c" stroke="#a88f5a"/><ellipse cx="32" cy="38" rx="21" ry="7" fill="#e0c995" stroke="#a88f5a"/><ellipse cx="32" cy="30" rx="21" ry="7" fill="#f3e4bd" stroke="#a88f5a"/><g fill="#c9ad72"><circle cx="24" cy="29" r="1.3"/><circle cx="31" cy="27" r="1.3"/><circle cx="39" cy="30" r="1.3"/><circle cx="28" cy="32" r="1.1"/><circle cx="36" cy="33" r="1.1"/><circle cx="43" cy="27" r="1.1"/></g>',
+pretzel:SH+'<path d="M18 48c-11-4-11-24 2-26 8-1 12 8 12 14 0-6 4-15 12-14 13 2 13 22 2 26M21 52l21-24M43 52L22 28" fill="none" stroke="#8a4a1a" stroke-width="7" stroke-linecap="round"/><g fill="#fff"><rect x="15" y="27" width="2.4" height="2.4"/><rect x="45" y="25" width="2.4" height="2.4"/><rect x="29" y="40" width="2.4" height="2.4"/><rect x="50" y="36" width="2.4" height="2.4"/><rect x="11" y="38" width="2.4" height="2.4"/></g>',
+nutella:SH+'<path d="M10 55V26c0-11 9-17 22-17s22 6 22 17v29z" fill="#c4823d"/><path d="M14 52V27c0-8.5 7-13.5 18-13.5S50 18.5 50 27v25z" fill="#f3dfb0"/><path d="M16 28c1-6 6-10 15-10 7 0 13 2 16 7 2 3-1 5 0 8 1 4 1 8-1 11-2 4-5 2-8 4-4 2-7 1-11 0-4-1-8-1-10-5-2-3 0-7-1-10z" fill="#5e3219"/><path d="M22 24c3-2 7-3 11-2" stroke="#a8693d" stroke-width="2" stroke-linecap="round" fill="none"/>',
+salami:SH+'<ellipse cx="32" cy="38" rx="25" ry="15" fill="#d9a05a"/><path d="M8 38c0-4 11-8 24-8s24 4 24 8" fill="#f4e7c8"/><g fill="#b02a2a" stroke="#6b1717"><circle cx="21" cy="33" r="7"/><circle cx="33" cy="31" r="7"/><circle cx="45" cy="34" r="7"/></g><g fill="#f8e1d6"><circle cx="19" cy="32" r="1"/><circle cx="34" cy="29" r="1"/><circle cx="46" cy="35" r="1"/><circle cx="31" cy="33" r=".8"/></g><path d="M8 38c0 10 11 15 24 15s24-5 24-15" fill="#c48a45"/>',
+sandwich:SH+'<path d="M8 48L32 16l24 32z" fill="#e6eef5" stroke="#9fb3c3"/><path d="M14 46L32 22l18 24z" fill="#a8703c"/><path d="M17 43L32 24l15 19z" fill="#f1d7a8"/><path d="M15 45l17-6 17 6" stroke="#5fb43c" stroke-width="3" fill="none"/><path d="M18 40l14-5 14 5" stroke="#f3e2c8" stroke-width="3" fill="none"/><rect x="20" y="47" width="24" height="7" rx="2" fill="#2469b2"/>',
+plainyog:'<ellipse cx="32" cy="57" rx="18" ry="3" fill="#000" opacity=".12"/><path d="M15 16h34l-4 40H19z" fill="#f4f7fa" stroke="#aab6c3"/><path d="M16.3 28h31.4l-1.6 17H17.9z" fill="#5fb43c"/><path d="M24 36.5h16" stroke="#fff" stroke-width="3" stroke-linecap="round"/><ellipse cx="32" cy="16" rx="18" ry="4" fill="#d5dbe2" stroke="#9aa6b3"/>',
+fruityog:'<ellipse cx="32" cy="57" rx="18" ry="3" fill="#000" opacity=".12"/><path d="M15 16h34l-4 40H19z" fill="#f4f7fa" stroke="#aab6c3"/><path d="M16.3 28h31.4l-1.6 17H17.9z" fill="#e8669a"/><circle cx="25" cy="37" r="2.6" fill="#d81e2c"/><circle cx="32" cy="35" r="2.6" fill="#d81e2c"/><circle cx="39" cy="37" r="2.6" fill="#d81e2c"/><ellipse cx="32" cy="16" rx="18" ry="4" fill="#d5dbe2" stroke="#9aa6b3"/>',
+cheese:SH+'<g stroke="#b89225"><rect x="12" y="12" width="10" height="40" rx="5" fill="#f6dc78" transform="rotate(-12 17 32)"/><rect x="27" y="10" width="10" height="42" rx="5" fill="#f6dc78"/><rect x="42" y="12" width="10" height="40" rx="5" fill="#f6dc78" transform="rotate(12 47 32)"/></g><g fill="#e0bb48"><circle cx="31" cy="22" r="1.5"/><circle cx="33" cy="38" r="1.2"/><circle cx="16" cy="30" r="1.2"/><circle cx="48" cy="26" r="1.3"/></g>',
+egg:SH+'<ellipse cx="23" cy="34" rx="13" ry="17" fill="#fbf3e4" stroke="#c9bfa8"/><ellipse cx="44" cy="41" rx="12" ry="12" fill="#fff" stroke="#c9bfa8"/><circle cx="44" cy="42" r="6" fill="#f6b81a"/><ellipse cx="18" cy="27" rx="3" ry="5" fill="#fff" opacity=".7"/>',
+cocoa:SH+'<rect x="16" y="16" width="26" height="40" rx="2" fill="#7a4a2a"/><path d="M16 16l6-6h26l-6 6z" fill="#9a6440"/><path d="M42 16l6-6v40l-6 6z" fill="#5e3820"/><rect x="20" y="28" width="18" height="14" rx="2" fill="#f3e2c8"/><path d="M24 35h10" stroke="#7a4a2a" stroke-width="2"/><path d="M36 12l4-9h5" stroke="#e8434f" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+peanuts:SH+'<g fill="#e0b070" stroke="#a8742f"><ellipse cx="18" cy="42" rx="8" ry="5.5"/><ellipse cx="33" cy="46" rx="8" ry="5.5" transform="rotate(18 33 46)"/><ellipse cx="47" cy="40" rx="8" ry="5.5" transform="rotate(-25 47 40)"/><ellipse cx="25" cy="30" rx="8" ry="5.5" transform="rotate(28 25 30)"/><ellipse cx="41" cy="27" rx="8" ry="5.5"/></g><g stroke="#a8742f"><path d="M18 37v10M33 41v10M41 22v10"/></g>',
+trailmix:SH+'<g fill="#e0b070" stroke="#a8742f"><ellipse cx="18" cy="42" rx="7" ry="5"/><ellipse cx="44" cy="44" rx="7" ry="5" transform="rotate(-20 44 44)"/><ellipse cx="38" cy="26" rx="7" ry="5"/></g><g fill="#b8743a" stroke="#7a4a1a"><path d="M24 26c4-6 10-6 11 0-3 6-9 6-11 0z"/><path d="M28 46c4-6 10-6 11 0-3 6-9 6-11 0z"/></g><g fill="#4a2340"><ellipse cx="30" cy="36" rx="4" ry="3"/><ellipse cx="48" cy="33" rx="3.5" ry="2.6"/><ellipse cx="14" cy="32" rx="3.5" ry="2.6"/><ellipse cx="22" cy="52" rx="3.5" ry="2.4"/></g>',
+raisins:SH+'<rect x="16" y="18" width="32" height="38" rx="3" fill="#d93a2f"/><path d="M16 18h32l-4-8H20z" fill="#b52a21"/><circle cx="32" cy="35" r="10" fill="#f5d36b"/><g fill="#4a2340"><ellipse cx="28" cy="33" rx="3.2" ry="2.2"/><ellipse cx="35" cy="37" rx="3.2" ry="2.2"/><ellipse cx="33" cy="31" rx="2.6" ry="1.8"/></g>',
+pouch:SH+'<path d="M17 22h30l3 32H14z" fill="#8fc24a" stroke="#5f8f2a"/><rect x="28" y="6" width="8" height="9" rx="1.5" fill="#e8434f"/><path d="M26 15h12l5 7H21z" fill="#d7e3c4" stroke="#5f8f2a"/><circle cx="32" cy="38" r="8" fill="#d92b23"/><path d="M32 30c0-2 1-4 3-5" stroke="#5b3a1e" stroke-width="1.5" fill="none"/>',
+cerealbar:SH+'<g transform="rotate(-15 32 32)"><rect x="6" y="24" width="52" height="16" rx="4" fill="#c99552" stroke="#8f6229"/><g fill="#f1d9a8"><ellipse cx="14" cy="29" rx="2.6" ry="1.5"/><ellipse cx="24" cy="34" rx="2.6" ry="1.5"/><ellipse cx="34" cy="29" rx="2.6" ry="1.5"/><ellipse cx="44" cy="35" rx="2.6" ry="1.5"/><ellipse cx="51" cy="29" rx="2.6" ry="1.5"/></g><g fill="#5a2f16"><circle cx="19" cy="31" r="1.4"/><circle cx="29" cy="36" r="1.4"/><circle cx="39" cy="31" r="1.4"/><circle cx="48" cy="32" r="1.4"/></g></g>',
+biscuits:SH+'<rect x="8" y="12" width="38" height="28" rx="5" fill="#d9a35a" stroke="#a8742f" stroke-width="2" stroke-dasharray="4 2"/><rect x="18" y="22" width="38" height="28" rx="5" fill="#ecc27a" stroke="#b9832f" stroke-width="2" stroke-dasharray="4 2"/><g fill="#b9832f"><circle cx="27" cy="31" r="1.3"/><circle cx="37" cy="31" r="1.3"/><circle cx="47" cy="31" r="1.3"/><circle cx="27" cy="41" r="1.3"/><circle cx="37" cy="41" r="1.3"/><circle cx="47" cy="41" r="1.3"/></g>',
+chips:SH+'<path d="M14 10h36l-3 6 3 4-2 28 2 4-3 5H14l3-5-2-4 2-28-3-4z" fill="#f2c230" stroke="#b58a14"/><path d="M15 13h34M15 52h34" stroke="#d93a2f" stroke-width="3"/><ellipse cx="32" cy="33" rx="11" ry="8" fill="#ffe680" stroke="#c9971a"/><path d="M25 32c4 2 10 2 14 0" stroke="#c9971a" fill="none"/>',
+chocobar:SH+'<g transform="rotate(-18 32 32)"><rect x="5" y="24" width="32" height="16" rx="2.5" fill="#5e3219"/><path d="M13 24v16M21 24v16M29 24v16M5 32h32" stroke="#2e170b" stroke-width="1.1"/><path d="M33 21h26l-2 3 2 3-2 3 2 3-2 3 2 3-2 3H33z" fill="#c62f2f"/><rect x="38" y="27.5" width="15" height="9" rx="1.5" fill="#f5d36b"/><path d="M41 32h9" stroke="#8f1d1d" stroke-width="1.6"/></g>',
+croissant:'<ellipse cx="32" cy="52" rx="26" ry="4" fill="#000" opacity=".12"/><g stroke="#8a4a12" fill="#e0993d"><ellipse cx="9" cy="42" rx="5" ry="7.5" transform="rotate(-50 9 42)"/><ellipse cx="55" cy="42" rx="5" ry="7.5" transform="rotate(50 55 42)"/><ellipse cx="18" cy="35" rx="7.5" ry="11" transform="rotate(-30 18 35)"/><ellipse cx="46" cy="35" rx="7.5" ry="11" transform="rotate(30 46 35)"/><ellipse cx="32" cy="32" rx="10" ry="15" fill="#f0b45a"/></g><path d="M14 30l6 6 5-9 6 9 5-10 6 9 5-8 5 7" stroke="#3d1f0c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+};
+const picture=i=>'<svg viewBox="0 0 64 64" aria-hidden="true">'+art[products[i].img]+'</svg>';
+
+const t=()=>translations[lang];
+const locale=()=>lang==="en"?"en-GB":lang==="ar"?"ar":lang==="ru"?"ru-RU":"de-DE";
+const money=c=>(c/100).toLocaleString(locale(),{style:"currency",currency:"EUR"});
+const dec=v=>v.toLocaleString(locale(),{minimumFractionDigits:1,maximumFractionDigits:1});
+const dayText=d=>d+" "+(d===1?t().day:t().days);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function total(ids=[...selected]){
+ const r={kcal:0,cents:0,starSum:0,days:Infinity,count:0,ids:[...ids]};
+ ids.forEach(i=>{const p=products[i];if(!p)return;r.count++;r.kcal+=p.kcal;r.cents+=p.cents;r.starSum+=p.stars;r.days=Math.min(r.days,p.days)});
+ if(!r.count)r.days=0;
+ r.avg=r.count?r.starSum/r.count:0;
+ r.mH=!r.count?0:r.starSum>=RULES.health[0]*r.count?3:r.starSum>=RULES.health[1]*r.count?2:r.starSum>=RULES.health[2]*r.count?1:0;
+ r.mP=!r.count?0:r.cents<=RULES.price[0]?3:r.cents<=RULES.price[1]?2:r.cents<=RULES.price[2]?1:0;
+ r.mS=!r.count?0:r.days>=RULES.shelf[0]?3:r.days>=RULES.shelf[1]?2:r.days>=RULES.shelf[2]?1:0;
+ r.points=r.mH+r.mP+r.mS;
+ r.valid=r.kcal>=MIN&&r.kcal<=MAX&&r.count<=MAX_ITEMS;
+ return r;
+}
+/* Rangfolge: Punkte, dann mehr Sterne, dann günstiger, dann länger haltbar */
+function better(a,b){
+ return b.points-a.points||b.avg-a.avg||a.cents-b.cents||b.days-a.days;
+}
+function medalIcon(m){return m===3?"🥇":m===2?"🥈":m===1?"🥉":"–"}
+function medalName(m){const x=t();return m===3?x.gold:m===2?x.silver:m===1?x.bronze:x.noMedal}
+
+function bestSolution(){
+ if(solutionCache)return solutionCache;
+ let best=null;const n=products.length,pick=[];
+ (function dfs(start,kcal){
+  if(kcal>=MIN){
+   const r=total(pick);
+   if(!best||better(r,best)<0)best=r;
+  }
+  if(pick.length===MAX_ITEMS)return;
+  for(let i=start;i<n;i++){
+   if(kcal+products[i].kcal>MAX)continue;
+   pick.push(i);dfs(i+1,kcal+products[i].kcal);pick.pop();
+  }
+ })(0,0);
+ return solutionCache=best;
+}
+
+function applyLanguage(){
+ const x=t();
+ document.documentElement.lang=lang;
+ document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+ const labels={pageTitle:x.page,levelTitle:x.title,quizLevelTitle:x.title,gameHeading:x.title,rulesHeading:x.rulesHeading,
+  startButton:x.start,quizCheck:x.check,quizQuestion:x.quizQuestion,quizSub:x.quizSub,
+  calorieLabel:x.calories,healthLabel:x.health+" ("+x.avgStars+")",priceLabel:x.price,shelfLabel:x.shelf,
+  clearButton:x.clear,nextButton:x.finish,hintLabel:x.tips,nameHeading:x.nameHeading,nameInstructions:x.nameInstructions,
+  nameLabel:x.nameLabel,submitScore:x.save,skipSave:x.skip,finalHeading:x.final,finalInstructions:x.finalInstructions,
+  compareHeading:x.compare,leaderboardHeading:x.leaderboard,restartButton:x.restart};
+ Object.entries(labels).forEach(([id,text])=>$(id).textContent=text);
+ $("task").textContent="❗ "+x.task;$("quizTask").textContent="❗ "+x.task;
+ $("playerName").placeholder=x.namePlaceholder;
+ document.querySelectorAll(".language-buttons button").forEach(b=>{
+  const on=b.dataset.language===lang;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on));
+ });
+ renderRules();
+ if(!$("quizScreen").hidden)renderQuizOptions();
+ if(!$("game").hidden)renderGame();
+ if(!$("hintPopup").hidden)renderHint();
+ if(!$("finalScreen").hidden)renderFinal(false);
+}
+function renderRules(){
+ const x=t(),R=RULES;
+ const row=(name,cells)=>"<tr><td>"+esc(name)+"</td>"+cells.map(c=>"<td>"+esc(c)+"</td>").join("")+"</tr>";
+ $("rulesTable").innerHTML="<thead><tr><th></th><th>🥇 "+esc(x.gold)+"</th><th>🥈 "+esc(x.silver)+"</th><th>🥉 "+esc(x.bronze)+"</th></tr></thead><tbody>"+
+  row(x.ruleHealth,R.health.map(v=>x.atLeast+" "+dec(v)+" ★"))+
+  row(x.rulePrice,R.price.map(v=>x.atMost+" "+money(v)))+
+  row(x.ruleShelf,R.shelf.map(v=>x.atLeast+" "+dayText(v)))+"</tbody>";
+}
+function show(ids){
+ ["startScreen","quizScreen","game","actionBar","hintFloat","hintPopup","nameGate","finalScreen"].forEach(id=>$(id).hidden=!ids.includes(id));
+ $("hintFloat").setAttribute("aria-expanded","false");
+ window.scrollTo(0,0);
+}
+function renderQuizOptions(){
+ const x=t(),box=$("quizOptions");box.replaceChildren();
+ x.quizOptions.forEach((text,i)=>{
+  const b=document.createElement("button");b.type="button";b.textContent=text;
+  b.setAttribute("aria-pressed",String(quizPick.has(i)));
+  b.addEventListener("click",()=>{
+   if(quizPick.has(i))quizPick.delete(i);else quizPick.add(i);
+   b.setAttribute("aria-pressed",String(quizPick.has(i)));
+   box.querySelectorAll("button").forEach(o=>o.classList.remove("wrong","right"));
+   $("quizFeedback").textContent="";$("quizFeedback").className="";
+  });
+  box.appendChild(b);
+ });
+}
+function startQuiz(){
+ quizPick.clear();$("quizFeedback").textContent="";$("quizFeedback").className="";$("quizCheck").disabled=false;
+ show(["quizScreen"]);renderQuizOptions();
+}
+function checkQuiz(){
+ const ok=quizPick.size===3&&[1,2,3].every(i=>quizPick.has(i));
+ const fb=$("quizFeedback"),buttons=$("quizOptions").querySelectorAll("button");
+ if(ok){
+  buttons.forEach((b,i)=>{if(quizPick.has(i))b.classList.add("right");b.disabled=true});
+  fb.className="right";fb.textContent=t().quizRight;$("quizCheck").disabled=true;
+  setTimeout(()=>{show(["game","actionBar","hintFloat"]);renderGame()},900);
+ }else{
+  buttons.forEach((b,i)=>{if(quizPick.has(i)&&i===0)b.classList.add("wrong")});
+  fb.className="wrong";fb.textContent=t().quizWrong;
+ }
+}
+function renderProducts(){
+ const x=t(),box=$("products"),sum=total();
+ box.replaceChildren();
+ x.groups.forEach((groupName,g)=>{
+  const h=document.createElement("h3");h.className="group-title";h.textContent=groupName;
+  const grid=document.createElement("div");grid.className="grid";
+  products.forEach((p,i)=>{
+   if(p.g!==g)return;
+   const label=document.createElement("label");label.className="product";
+   const input=document.createElement("input");input.type="checkbox";input.checked=selected.has(i);
+   input.disabled=!input.checked&&(sum.kcal+p.kcal>MAX||sum.count>=MAX_ITEMS);
+   input.addEventListener("change",()=>{
+    if(input.checked)selected.add(i);else selected.delete(i);
+    renderProducts();renderSummary();
+   });
+   const pic=document.createElement("span");pic.className="product-img";pic.innerHTML=picture(i);
+   const info=document.createElement("span");info.className="product-info";
+   const name=document.createElement("span");name.className="product-name";name.textContent=x.products[i];
+   const detail=document.createElement("span");detail.className="details";
+   detail.textContent=p.kcal+" "+x.calories+" · "+money(p.cents)+" · "+x.shelf+": "+dayText(p.days);
+   const stars=document.createElement("span");stars.className="stars";
+   stars.textContent=x.healthStars+" "+"★".repeat(p.stars)+"☆".repeat(5-p.stars);
+   info.append(name,detail,stars);label.append(input,pic,info);grid.appendChild(label);
+  });
+  box.append(h,grid);
+ });
+}
+function renderSummary(){
+ const x=t(),r=total();
+ $("productsHeading").textContent=x.productsTitle+" ("+r.count+"/"+MAX_ITEMS+" "+x.inBox+")";
+ $("calories").textContent=r.kcal+" "+x.calories;
+ $("calorieFill").style.width=Math.min(100,r.kcal/MAX*100)+"%";
+ $("calorieFill").style.backgroundColor=r.kcal>=MIN?"#79bd83":"#f2bd57";
+ $("calorieMeter").setAttribute("aria-valuenow",r.kcal);
+ $("health").textContent=r.count?dec(r.avg)+" ★":"–";
+ $("price").textContent=money(r.cents);
+ $("shelfLife").textContent=r.count?dayText(r.days):"–";
+ [["statHealth","healthMedal",r.mH],["statPrice","priceMedal",r.mP],["statShelf","shelfMedal",r.mS]].forEach(([box,line,m])=>{
+  $(box).className="stat"+(m&&r.count?" m"+m:"");
+  $(line).textContent=r.count?medalIcon(m)+" "+medalName(m):"";
+ });
+ $("points").textContent=x.pointsLabel+": "+r.points+"/9";
+ const goal=$("goal");
+ if(r.kcal>=MIN&&r.kcal<=MAX){goal.textContent=x.goal+(r.count>=MAX_ITEMS?" "+x.full:"");goal.classList.add("reached")}
+ else if(r.kcal<MIN){goal.textContent=x.short.replace("{n}",MIN-r.kcal)+(r.count>=MAX_ITEMS?" "+x.full:"");goal.classList.remove("reached")}
+ else{goal.textContent=x.tooMany;goal.classList.remove("reached")}
+ $("nextButton").disabled=!r.valid;
+}
+function renderGame(){renderProducts();renderSummary()}
+function renderHint(){
+ const box=$("hintPopup");box.replaceChildren();
+ t().hint.forEach(text=>{const p=document.createElement("p");p.textContent="💡 "+text;box.appendChild(p)});
+}
+function headerRow(){
+ const x=t();
+ return "<colgroup>"+"<col>".repeat(7)+"</colgroup><thead><tr>"+[x.colWho,x.colProducts,x.calories,x.price,x.avgStars,x.shelf,x.colPoints]
+  .map(h=>'<th scope="col">'+esc(h)+"</th>").join("")+"</tr></thead>";
+}
+function resultRow(who,ids,mine){
+ const x=t(),clean=ids.filter(i=>Number.isInteger(i)&&products[i]),r=total(clean);
+ const icons='<div class="icon-list">'+clean.map(i=>'<span class="icon-item">'+picture(i)+"<span>"+esc(x.products[i])+"</span></span>").join("")+"</div>";
+ return '<tr'+(mine?' class="mine"':"")+"><td>"+esc(who)+"</td><td>"+icons+"</td><td>"+r.kcal+"</td><td>"+esc(money(r.cents))+" "+medalIcon(r.mP)+
+  "</td><td>"+esc(dec(r.avg))+" ★ "+medalIcon(r.mH)+"</td><td>"+esc(dayText(r.days))+" "+medalIcon(r.mS)+"</td><td>"+r.points+"/9</td></tr>";
+}
+function renderFinal(load=true){
+ const x=t(),sol=bestSolution();
+ $("ownTable").innerHTML=headerRow()+"<tbody>"+resultRow(x.you,finalIds,true)+(sol?resultRow(x.solution,sol.ids,false):"")+"</tbody>";
+ $("merke").innerHTML="<h3>✅ "+esc(x.merkeTitle)+"</h3>"+x.merke.map(p=>"<p>"+esc(p)+"</p>").join("");
+ if(load)loadLeaderboard();else if(lastRows)renderBoard(lastRows);
+}
+let lastRows=null;
+async function loadLeaderboard(){
+ const status=$("leaderboardStatus");status.hidden=true;
+ try{
+  const res=await fetch(SUPABASE_URL+"/rest/v1/leaderboard?select=player,selections,created_at&order=created_at.asc&limit=10000",
+   {headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});
+  if(!res.ok)throw new Error("load");
+  const rows=await res.json();
+  lastRows=rows.map(row=>{
+   if(!Array.isArray(row.selections))return null;
+   const s=row.selections.find(e=>e&&e.level===LEVEL_ID&&Array.isArray(e.ids));
+   if(!s)return null;
+   const ids=[...new Set(s.ids.filter(i=>Number.isInteger(i)&&products[i]))];
+   const r=total(ids);
+   return r.valid?{player:row.player||"?",ids,r,time:new Date(row.created_at)}:null;
+  }).filter(Boolean);
+  renderBoard(lastRows);
+ }catch(e){
+  lastRows=null;$("statCards").replaceChildren();
+  $("topTable").innerHTML="";
+  status.textContent=t().loadError;status.hidden=false;
+ }
+}
+function renderBoard(entries){
+ const x=t(),n=entries.length;
+ const card=(num,label)=>'<div class="stat-card"><strong>'+num+"</strong><span>"+esc(label)+"</span></div>";
+ const cnt=f=>entries.filter(f).length+"/"+n;
+ $("statCards").innerHTML=card(n,x.cardAll)+card(cnt(e=>e.r.points===9),x.cardGold3)+
+  card(cnt(e=>e.r.mH===3),x.cardGoldH)+card(cnt(e=>e.r.mP===3),x.cardGoldP)+card(cnt(e=>e.r.mS===3),x.cardGoldS);
+ const top=[...entries].sort((a,b)=>better(a.r,b.r)||a.time-b.time).slice(0,5);
+ $("topTable").innerHTML=headerRow()+"<tbody>"+(top.length?top.map((e,i)=>resultRow("#"+(i+1)+" "+e.player,e.ids,false)).join("")
+  :'<tr><td colspan="7">'+esc(x.empty)+"</td></tr>")+"</tbody>";
+}
+async function submitResults(){
+ const name=$("playerName").value.trim(),x=t();
+ if(!name){$("scoreStatus").textContent=x.enterName;$("playerName").focus();return}
+ if(submitted)return;
+ const button=$("submitScore");button.disabled=true;$("scoreStatus").textContent=x.saving;
+ try{
+  const res=await fetch(SUPABASE_URL+"/rest/v1/leaderboard",{method:"POST",
+   headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},
+   body:JSON.stringify({player:name.slice(0,24),selections:[{level:LEVEL_ID,ids:finalIds}]})});
+  if(!res.ok)throw new Error("save");
+  submitted=true;show(["finalScreen"]);renderFinal();
+ }catch(e){
+  button.disabled=false;$("scoreStatus").textContent=t().saveError;$("skipSave").hidden=false;
+ }
+}
+function finishBox(){
+ const r=total();if(!r.valid)return;
+ finalIds=[...selected].sort((a,b)=>a-b);
+ show(["nameGate"]);$("scoreStatus").textContent="";$("submitScore").disabled=false;$("skipSave").hidden=true;$("playerName").focus();
+}
+document.querySelectorAll(".language-buttons button").forEach(b=>b.addEventListener("click",()=>{lang=b.dataset.language;applyLanguage()}));
+$("startButton").addEventListener("click",startQuiz);
+$("quizCheck").addEventListener("click",checkQuiz);
+$("hintFloat").addEventListener("click",()=>{
+ const popup=$("hintPopup");
+ if(!popup.hidden){popup.hidden=true;$("hintFloat").setAttribute("aria-expanded","false");return}
+ renderHint();popup.hidden=false;$("hintFloat").setAttribute("aria-expanded","true");
+});
+$("clearButton").addEventListener("click",()=>{selected.clear();renderGame()});
+$("nextButton").addEventListener("click",finishBox);
+$("submitScore").addEventListener("click",submitResults);
+$("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")submitResults()});
+$("skipSave").addEventListener("click",()=>{show(["finalScreen"]);renderFinal()});
+$("restartButton").addEventListener("click",()=>{selected.clear();submitted=false;finalIds=[];$("playerName").value="";show(["startScreen"])});
+applyLanguage();show(["startScreen"]);
+}
+</script>
+</body>
+</html>
